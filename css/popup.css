@@ -47,8 +47,8 @@ body {
   line-height: 1.5;
   color: var(--text-primary);
   background: var(--bg-primary);
-  min-width: 380px;
-  max-width: 420px;
+  min-width: 800px;
+  max-width: 100%;
 }
 
 /* 容器 */
@@ -135,7 +135,7 @@ body {
 
 .query-input {
   width: 100%;
-  min-height: 100px;
+  min-height: 120px;
   padding: 14px;
   font-size: 14px;
   line-height: 1.6;

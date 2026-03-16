@@ -251,7 +251,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           // 打开新标签页
           const tab = await chrome.tabs.create({
             url: tool.url,
-            active: index === 0 // 第一个标签页激活
+            active: index === toolsToOpen.length - 1 // 最后一个标签页激活
           });
 
           // 等待标签页加载完成，然后注入脚本自动填充内容

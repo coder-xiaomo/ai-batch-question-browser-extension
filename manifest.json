@@ -21,8 +21,10 @@
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     },
-    "default_popup": "popup.html",
     "default_title": "AI 批量查询"
+  },
+  "background": {
+    "service_worker": "js/background.js"
   },
   "icons": {
     "16": "icons/icon16.png",
