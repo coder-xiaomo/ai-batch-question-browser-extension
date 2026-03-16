@@ -243,104 +243,107 @@ document.addEventListener('DOMContentLoaded', async () => {
       console.warn('复制到剪贴板失败:', error);
     }
 
-    for (const tool of toolsToOpen) {
+    // 并行打开所有标签页
+    const openTabPromises = toolsToOpen.map(async (tool, index) => {
       try {
         // 检查 Chrome API 是否可用
         if (chrome && chrome.tabs) {
           // 打开新标签页
           const tab = await chrome.tabs.create({
             url: tool.url,
-            active: openedCount === 0 // 第一个标签页激活
+            active: index === 0 // 第一个标签页激活
           });
 
           // 等待标签页加载完成，然后注入脚本自动填充内容
-          chrome.tabs.onUpdated.addListener(function listener(tabId, changeInfo, updatedTab) {
-            if (tabId === tab.id && changeInfo.status === 'complete') {
-              // 移除监听器，避免重复执行
-              chrome.tabs.onUpdated.removeListener(listener);
+          return new Promise((resolve) => {
+            chrome.tabs.onUpdated.addListener(function listener(tabId, changeInfo, updatedTab) {
+              if (tabId === tab.id && changeInfo.status === 'complete') {
+                // 移除监听器，避免重复执行
+                chrome.tabs.onUpdated.removeListener(listener);
 
-              // 检查 scripting API 是否可用
-              if (chrome.scripting) {
-                // 注入脚本自动填充内容并发送
-                chrome.scripting.executeScript({
-                  target: { tabId: tab.id },
-                  function: (query) => {
-                    // 等待页面完全加载
-                    setTimeout(() => {
-                      // 尝试不同的选择器来找到输入框
-                      const inputSelectors = [
-                        'textarea',
-                        '[role="textbox"]',
-                        '.chat-input',
-                        '#chat-input',
-                        '.input-area'
-                      ];
-
-                      let inputElement = null;
-                      for (const selector of inputSelectors) {
-                        inputElement = document.querySelector(selector);
-                        if (inputElement) break;
-                      }
-
-                      if (inputElement) {
-                        // 填充内容
-                        inputElement.value = query;
-
-                        // 触发输入事件
-                        inputElement.dispatchEvent(new Event('input', { bubbles: true }));
-                        inputElement.dispatchEvent(new Event('change', { bubbles: true }));
-
-                        // 尝试找到发送按钮并点击
-                        const sendButtonSelectors = [
-                          'button[type="submit"]',
-                          '.send-button',
-                          '#send-button',
-                          '.submit-btn',
-                          '[aria-label*="发送"]',
-                          '[aria-label*="Send"]'
+                // 检查 scripting API 是否可用
+                if (chrome.scripting) {
+                  // 注入脚本自动填充内容并发送
+                  chrome.scripting.executeScript({
+                    target: { tabId: tab.id },
+                    function: (query) => {
+                      // 等待页面完全加载
+                      setTimeout(() => {
+                        // 尝试不同的选择器来找到输入框
+                        const inputSelectors = [
+                          'textarea',
+                          '[role="textbox"]',
+                          '.chat-input',
+                          '#chat-input',
+                          '.input-area'
                         ];
 
-                        let sendButton = null;
-                        for (const selector of sendButtonSelectors) {
-                          sendButton = document.querySelector(selector);
-                          if (sendButton) break;
+                        let inputElement = null;
+                        for (const selector of inputSelectors) {
+                          inputElement = document.querySelector(selector);
+                          if (inputElement) break;
                         }
 
-                        if (sendButton) {
-                          sendButton.click();
-                        } else {
-                          // 如果没有找到发送按钮，尝试按Enter键
-                          inputElement.dispatchEvent(new KeyboardEvent('keydown', {
-                            key: 'Enter',
-                            code: 'Enter',
-                            bubbles: true,
-                            cancelable: true
-                          }));
+                        if (inputElement) {
+                          // 填充内容
+                          inputElement.value = query;
+
+                          // 触发输入事件
+                          inputElement.dispatchEvent(new Event('input', { bubbles: true }));
+                          inputElement.dispatchEvent(new Event('change', { bubbles: true }));
+
+                          // 尝试找到发送按钮并点击
+                          const sendButtonSelectors = [
+                            'button[type="submit"]',
+                            '.send-button',
+                            '#send-button',
+                            '.submit-btn',
+                            '[aria-label*="发送"]',
+                            '[aria-label*="Send"]'
+                          ];
+
+                          let sendButton = null;
+                          for (const selector of sendButtonSelectors) {
+                            sendButton = document.querySelector(selector);
+                            if (sendButton) break;
+                          }
+
+                          if (sendButton) {
+                            sendButton.click();
+                          } else {
+                            // 如果没有找到发送按钮，尝试按Enter键
+                            inputElement.dispatchEvent(new KeyboardEvent('keydown', {
+                              key: 'Enter',
+                              code: 'Enter',
+                              bubbles: true,
+                              cancelable: true
+                            }));
+                          }
                         }
-                      }
-                    }, 1000); // 1秒延迟，确保页面完全加载
-                  },
-                  args: [query]
-                });
-              } else {
-                console.warn('Chrome scripting API 不可用，无法自动填充内容');
+                      }, 1000); // 1秒延迟，确保页面完全加载
+                    },
+                    args: [query]
+                  });
+                } else {
+                  console.warn('Chrome scripting API 不可用，无法自动填充内容');
+                }
+                resolve(true);
               }
-            }
+            });
           });
         } else {
           console.warn('Chrome tabs API 不可用，无法打开标签页');
-        }
-
-        openedCount++;
-
-        // 稍微延迟，避免浏览器阻止多个弹窗
-        if (openedCount < toolsToOpen.length) {
-          await new Promise(resolve => setTimeout(resolve, 300));
+          return false;
         }
       } catch (error) {
         console.error(`打开 ${tool.name} 失败:`, error);
+        return false;
       }
-    }
+    });
+
+    // 等待所有标签页打开完成
+    const results = await Promise.all(openTabPromises);
+    openedCount = results.filter(result => result).length;
 
     // 保存到历史记录
     try {
