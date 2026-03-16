@@ -65,11 +65,18 @@ document.addEventListener('DOMContentLoaded', async () => {
    */
   async function loadSelectedTools() {
     try {
-      const result = await chrome.storage.local.get(STORAGE_KEYS.SELECTED_TOOLS);
-      const savedTools = result[STORAGE_KEYS.SELECTED_TOOLS] || DEFAULT_SELECTED_TOOLS;
+      // 检查 Chrome API 是否可用
+      if (chrome && chrome.storage && chrome.storage.local) {
+        const result = await chrome.storage.local.get(STORAGE_KEYS.SELECTED_TOOLS);
+        const savedTools = result[STORAGE_KEYS.SELECTED_TOOLS] || DEFAULT_SELECTED_TOOLS;
 
-      selectedTools = new Set(savedTools);
-      updateToolsUI();
+        selectedTools = new Set(savedTools);
+        updateToolsUI();
+      } else {
+        console.warn('Chrome storage API 不可用，使用默认工具');
+        selectedTools = new Set(DEFAULT_SELECTED_TOOLS);
+        updateToolsUI();
+      }
     } catch (error) {
       console.error('加载工具选中状态失败:', error);
       selectedTools = new Set(DEFAULT_SELECTED_TOOLS);
@@ -82,9 +89,14 @@ document.addEventListener('DOMContentLoaded', async () => {
    */
   async function saveSelectedTools() {
     try {
-      await chrome.storage.local.set({
-        [STORAGE_KEYS.SELECTED_TOOLS]: Array.from(selectedTools)
-      });
+      // 检查 Chrome API 是否可用
+      if (chrome && chrome.storage && chrome.storage.local) {
+        await chrome.storage.local.set({
+          [STORAGE_KEYS.SELECTED_TOOLS]: Array.from(selectedTools)
+        });
+      } else {
+        console.warn('Chrome storage API 不可用，无法保存工具选中状态');
+      }
     } catch (error) {
       console.error('保存工具选中状态失败:', error);
     }
@@ -229,11 +241,91 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 将查询内容复制到剪贴板，方便用户粘贴
         await navigator.clipboard.writeText(query);
 
-        // 打开新标签页
-        await chrome.tabs.create({
-          url: tool.url,
-          active: openedCount === 0 // 第一个标签页激活
-        });
+        // 检查 Chrome API 是否可用
+        if (chrome && chrome.tabs) {
+          // 打开新标签页
+          const tab = await chrome.tabs.create({
+            url: tool.url,
+            active: openedCount === 0 // 第一个标签页激活
+          });
+
+          // 等待标签页加载完成，然后注入脚本自动填充内容
+          chrome.tabs.onUpdated.addListener(function listener(tabId, changeInfo, updatedTab) {
+            if (tabId === tab.id && changeInfo.status === 'complete') {
+              // 移除监听器，避免重复执行
+              chrome.tabs.onUpdated.removeListener(listener);
+
+              // 检查 scripting API 是否可用
+              if (chrome.scripting) {
+                // 注入脚本自动填充内容并发送
+                chrome.scripting.executeScript({
+                  target: { tabId: tab.id },
+                  function: (query) => {
+                    // 等待页面完全加载
+                    setTimeout(() => {
+                      // 尝试不同的选择器来找到输入框
+                      const inputSelectors = [
+                        'textarea',
+                        '[role="textbox"]',
+                        '.chat-input',
+                        '#chat-input',
+                        '.input-area'
+                      ];
+
+                      let inputElement = null;
+                      for (const selector of inputSelectors) {
+                        inputElement = document.querySelector(selector);
+                        if (inputElement) break;
+                      }
+
+                      if (inputElement) {
+                        // 填充内容
+                        inputElement.value = query;
+
+                        // 触发输入事件
+                        inputElement.dispatchEvent(new Event('input', { bubbles: true }));
+                        inputElement.dispatchEvent(new Event('change', { bubbles: true }));
+
+                        // 尝试找到发送按钮并点击
+                        const sendButtonSelectors = [
+                          'button[type="submit"]',
+                          '.send-button',
+                          '#send-button',
+                          '.submit-btn',
+                          '[aria-label*="发送"]',
+                          '[aria-label*="Send"]'
+                        ];
+
+                        let sendButton = null;
+                        for (const selector of sendButtonSelectors) {
+                          sendButton = document.querySelector(selector);
+                          if (sendButton) break;
+                        }
+
+                        if (sendButton) {
+                          sendButton.click();
+                        } else {
+                          // 如果没有找到发送按钮，尝试按Enter键
+                          inputElement.dispatchEvent(new KeyboardEvent('keydown', {
+                            key: 'Enter',
+                            code: 'Enter',
+                            bubbles: true,
+                            cancelable: true
+                          }));
+                        }
+                      }
+                    }, 1000); // 1秒延迟，确保页面完全加载
+                  },
+                  args: [query]
+                });
+              } else {
+                console.warn('Chrome scripting API 不可用，无法自动填充内容');
+              }
+            }
+          });
+        } else {
+          console.warn('Chrome tabs API 不可用，无法打开标签页');
+        }
 
         openedCount++;
 
