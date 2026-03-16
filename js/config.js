@@ -35,7 +35,7 @@ const AI_TOOLS = [
   {
     id: 'qianwen',
     name: '千问',
-    url: 'https://tongyi.aliyun.com/',
+    url: 'https://www.qianwen.com/',
     color: '#ff4081',
     icon: '千'
   }

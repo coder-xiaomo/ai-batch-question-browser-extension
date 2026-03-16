@@ -13,8 +13,7 @@
     "https://yuanbao.tencent.com/*",
     "https://www.doubao.com/*",
     "https://kimi.moonshot.cn/*",
-    "https://tongyi.aliyun.com/*",
-    "https://qianwen.aliyun.com/*"
+    "https://www.qianwen.com/*"
   ],
   "action": {
     "default_icon": {
