@@ -236,11 +236,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 批量打开标签页
     let openedCount = 0;
 
+    // 先将查询内容复制到剪贴板，只需要复制一次
+    try {
+      await navigator.clipboard.writeText(query);
+    } catch (error) {
+      console.warn('复制到剪贴板失败:', error);
+    }
+
     for (const tool of toolsToOpen) {
       try {
-        // 将查询内容复制到剪贴板，方便用户粘贴
-        await navigator.clipboard.writeText(query);
-
         // 检查 Chrome API 是否可用
         if (chrome && chrome.tabs) {
           // 打开新标签页
