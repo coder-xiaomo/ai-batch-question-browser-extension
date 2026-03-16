@@ -12,7 +12,7 @@
     "https://chat.deepseek.com/*",
     "https://yuanbao.tencent.com/*",
     "https://www.doubao.com/*",
-    "https://kimi.moonshot.cn/*",
+    "https://www.kimi.com/*",
     "https://www.qianwen.com/*"
   ],
   "action": {
@@ -30,5 +30,19 @@
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "js/content-scripts/*.js"
+      ],
+      "matches": [
+        "https://chat.deepseek.com/*",
+        "https://yuanbao.tencent.com/*",
+        "https://www.doubao.com/*",
+        "https://www.kimi.com/*",
+        "https://www.qianwen.com/*"
+      ]
+    }
+  ]
 }

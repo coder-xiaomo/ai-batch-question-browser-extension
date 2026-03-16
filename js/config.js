@@ -28,7 +28,7 @@ const AI_TOOLS = [
   {
     id: 'kimi',
     name: 'Kimi',
-    url: 'https://kimi.moonshot.cn/',
+    url: 'https://www.kimi.com/',
     color: '#6366f1',
     icon: 'K'
   },

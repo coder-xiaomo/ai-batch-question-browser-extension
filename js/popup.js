@@ -263,66 +263,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // 检查 scripting API 是否可用
                 if (chrome.scripting) {
-                  // 注入脚本自动填充内容并发送
+                  // 根据工具ID选择对应的脚本文件
+                  const scriptFile = `${tool.id}.js`;
+
+                  // 先注入设置全局变量的脚本
                   chrome.scripting.executeScript({
                     target: { tabId: tab.id },
-                    function: (query) => {
-                      // 等待页面完全加载
-                      setTimeout(() => {
-                        // 尝试不同的选择器来找到输入框
-                        const inputSelectors = [
-                          'textarea',
-                          '[role="textbox"]',
-                          '.chat-input',
-                          '#chat-input',
-                          '.input-area'
-                        ];
-
-                        let inputElement = null;
-                        for (const selector of inputSelectors) {
-                          inputElement = document.querySelector(selector);
-                          if (inputElement) break;
-                        }
-
-                        if (inputElement) {
-                          // 填充内容
-                          inputElement.value = query;
-
-                          // 触发输入事件
-                          inputElement.dispatchEvent(new Event('input', { bubbles: true }));
-                          inputElement.dispatchEvent(new Event('change', { bubbles: true }));
-
-                          // 尝试找到发送按钮并点击
-                          const sendButtonSelectors = [
-                            'button[type="submit"]',
-                            '.send-button',
-                            '#send-button',
-                            '.submit-btn',
-                            '[aria-label*="发送"]',
-                            '[aria-label*="Send"]'
-                          ];
-
-                          let sendButton = null;
-                          for (const selector of sendButtonSelectors) {
-                            sendButton = document.querySelector(selector);
-                            if (sendButton) break;
-                          }
-
-                          if (sendButton) {
-                            sendButton.click();
-                          } else {
-                            // 如果没有找到发送按钮，尝试按Enter键
-                            inputElement.dispatchEvent(new KeyboardEvent('keydown', {
-                              key: 'Enter',
-                              code: 'Enter',
-                              bubbles: true,
-                              cancelable: true
-                            }));
-                          }
-                        }
-                      }, 1000); // 1秒延迟，确保页面完全加载
+                    func: (query) => {
+                      window.__AI_QUERY_QUERY__ = query;
                     },
                     args: [query]
+                  }).then(() => {
+                    // 再注入实际的脚本文件
+                    chrome.scripting.executeScript({
+                      target: { tabId: tab.id },
+                      files: [`js/content-scripts/${scriptFile}`]
+                    });
+                  }).catch(error => {
+                    console.error(`注入脚本文件 ${scriptFile} 失败:`, error);
                   });
                 } else {
                   console.warn('Chrome scripting API 不可用，无法自动填充内容');
