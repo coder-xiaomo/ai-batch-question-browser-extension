@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 批量查询助手</title>
+  <link rel="stylesheet" href="css/popup.css">
+</head>
+<body>
+  <div class="container">
+    <!-- 头部 -->
+    <header class="header">
+      <div class="logo">
+        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <h1>AI 批量查询</h1>
+      </div>
+      <button id="historyBtn" class="history-btn" title="查询历史">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+          <path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="main-content">
+      <!-- 输入区域 -->
+      <div class="input-section">
+        <label for="queryInput" class="input-label">输入查询内容</label>
+        <textarea
+          id="queryInput"
+          class="query-input"
+          placeholder="请输入您想要查询的问题或关键词..."
+          rows="4"
+        ></textarea>
+        <div class="input-footer">
+          <span id="charCount" class="char-count">0 字符</span>
+          <button id="clearBtn" class="clear-btn" title="清空内容">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- AI 工具选择区域 -->
+      <div class="tools-section">
+        <div class="section-header">
+          <label class="section-label">选择 AI 工具</label>
+          <div class="select-actions">
+            <button id="selectAllBtn" class="select-action-btn">全选</button>
+            <button id="deselectAllBtn" class="select-action-btn">全不选</button>
+          </div>
+        </div>
+        <div class="tools-grid" id="toolsGrid">
+          <!-- AI 工具卡片将通过 JS 动态生成 -->
+        </div>
+      </div>
+    </main>
+
+    <!-- 底部操作区 -->
+    <footer class="footer">
+      <button id="queryBtn" class="query-btn">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+          <path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <span>开始批量查询</span>
+      </button>
+    </footer>
+
+    <!-- 历史记录面板 -->
+    <div id="historyPanel" class="history-panel hidden">
+      <div class="history-header">
+        <h2>查询历史</h2>
+        <div class="history-actions">
+          <button id="clearHistoryBtn" class="clear-history-btn">清空历史</button>
+          <button id="closeHistoryBtn" class="close-history-btn">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div id="historyList" class="history-list">
+        <!-- 历史记录将通过 JS 动态生成 -->
+      </div>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/popup.js"></script>
+</body>
+</html>

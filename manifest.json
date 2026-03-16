@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "AI 批量查询助手",
+  "version": "1.0.0",
+  "description": "一键在多个 AI 工具中批量查询，提升信息获取效率",
+  "permissions": [
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://chat.deepseek.com/*",
+    "https://yuanbao.tencent.com/*",
+    "https://www.doubao.com/*",
+    "https://kimi.moonshot.cn/*",
+    "https://tongyi.aliyun.com/*",
+    "https://qianwen.aliyun.com/*"
+  ],
+  "action": {
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_popup": "popup.html",
+    "default_title": "AI 批量查询"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
