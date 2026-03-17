@@ -52,8 +52,8 @@
 | DeepSeek | https://chat.deepseek.com/ |
 | 腾讯元宝 | https://yuanbao.tencent.com/chat/ |
 | 豆包 | https://www.doubao.com/chat/ |
-| Kimi | https://kimi.moonshot.cn/ |
-| 千问 | https://tongyi.aliyun.com/ |
+| Kimi | https://www.kimi.com/ |
+| 千问 | https://www.qianwen.com/ |
 
 > 注：各 AI 工具打开后，查询内容会自动复制到剪贴板，用户可直接粘贴使用。
 
