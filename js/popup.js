@@ -217,12 +217,21 @@ document.addEventListener('DOMContentLoaded', async () => {
    * 执行批量查询
    */
   async function handleQuery() {
+    // 检查 Chrome API 是否可用
+    if (!chrome || !chrome.tabs) {
+      console.error('Chrome tabs API 不可用，无法打开标签页');
+      return
+    }
+
     const query = queryInput.value.trim();
 
     if (!query) {
+      /*
       showToast('请输入查询内容');
       queryInput.focus();
       return;
+      */
+      showToast('未输入查询内容，将直接打开');
     }
 
     if (selectedTools.size === 0) {
@@ -246,53 +255,52 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 并行打开所有标签页
     const openTabPromises = toolsToOpen.map(async (tool, index) => {
       try {
-        // 检查 Chrome API 是否可用
-        if (chrome && chrome.tabs) {
-          // 打开新标签页
-          const tab = await chrome.tabs.create({
-            url: tool.url,
-            active: false // 先不激活，最后统一处理
-          });
+        // 打开新标签页
+        const tab = await chrome.tabs.create({
+          url: tool.url,
+          active: false // 先不激活，最后统一处理
+        });
 
-          // 等待标签页加载完成，然后注入脚本自动填充内容
-          return new Promise((resolve) => {
-            chrome.tabs.onUpdated.addListener(function listener(tabId, changeInfo, updatedTab) {
-              if (tabId === tab.id && changeInfo.status === 'complete') {
-                // 移除监听器，避免重复执行
-                chrome.tabs.onUpdated.removeListener(listener);
+        if (!query) {
+          console.log('无需注入js脚本进行查询，直接打开即可')
+          return Promise.resolve({ success: true, tabId: tab.id })
+        }
 
-                // 检查 scripting API 是否可用
-                if (chrome.scripting) {
-                  // 根据工具ID选择对应的脚本文件
-                  const scriptFile = `${tool.id}.js`;
+        // 等待标签页加载完成，然后注入脚本自动填充内容
+        return new Promise((resolve) => {
+          chrome.tabs.onUpdated.addListener(function listener(tabId, changeInfo, updatedTab) {
+            if (tabId === tab.id && changeInfo.status === 'complete') {
+              // 移除监听器，避免重复执行
+              chrome.tabs.onUpdated.removeListener(listener);
 
-                  // 先注入设置全局变量的脚本
+              // 检查 scripting API 是否可用
+              if (chrome.scripting) {
+                // 根据工具ID选择对应的脚本文件
+                const scriptFile = `${tool.id}.js`;
+
+                // 先注入设置全局变量的脚本
+                chrome.scripting.executeScript({
+                  target: { tabId: tab.id },
+                  func: (query) => {
+                    window.__AI_QUERY_QUERY__ = query;
+                  },
+                  args: [query]
+                }).then(() => {
+                  // 再注入实际的脚本文件
                   chrome.scripting.executeScript({
                     target: { tabId: tab.id },
-                    func: (query) => {
-                      window.__AI_QUERY_QUERY__ = query;
-                    },
-                    args: [query]
-                  }).then(() => {
-                    // 再注入实际的脚本文件
-                    chrome.scripting.executeScript({
-                      target: { tabId: tab.id },
-                      files: [`js/content-scripts/${scriptFile}`]
-                    });
-                  }).catch(error => {
-                    console.error(`注入脚本文件 ${scriptFile} 失败:`, error);
+                    files: [`js/content-scripts/${scriptFile}`]
                   });
-                } else {
-                  console.warn('Chrome scripting API 不可用，无法自动填充内容');
-                }
-                resolve({ success: true, tabId: tab.id });
+                }).catch(error => {
+                  console.error(`注入脚本文件 ${scriptFile} 失败:`, error);
+                });
+              } else {
+                console.warn('Chrome scripting API 不可用，无法自动填充内容');
               }
-            });
+              resolve({ success: true, tabId: tab.id });
+            }
           });
-        } else {
-          console.warn('Chrome tabs API 不可用，无法打开标签页');
-          return { success: false, tabId: null };
-        }
+        });
       } catch (error) {
         console.error(`打开 ${tool.name} 失败:`, error);
         return { success: false, tabId: null };
@@ -303,23 +311,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     const results = await Promise.all(openTabPromises);
     openedCount = results.filter(result => result.success).length;
 
-    // 创建标签页分组
+    // 打开多个标签页时，创建标签页分组
     const tabIds = results.filter(result => result.success).map(result => result.tabId);
-    if (tabIds.length > 0 && chrome && chrome.tabs && chrome.tabs.group) {
-      try {
-        const groupId = await chrome.tabs.group({ tabIds });
+    if (tabIds.length === 1) {
+      // 只有一个标签页时，直接激活它
+      await chrome.tabs.update(tabIds[0], { active: true });
+    } else if (tabIds.length > 1 && chrome.tabs.group) {
+      if (chrome.tabs.group) {
+        try {
+          const groupId = await chrome.tabs.group({ tabIds });
 
-        // 设置分组属性
-        if (chrome.tabGroups && chrome.tabGroups.update) {
-          const truncatedQuery = query.length > 20 ? query.substring(0, 20) + '...' : query;
-          await chrome.tabGroups.update(groupId, {
-            color: 'blue',
-            title: `AI查询: ${truncatedQuery}`,
-            collapsed: false
-          });
+          // 设置分组属性
+          if (chrome.tabGroups && chrome.tabGroups.update) {
+            const truncatedQuery = query.length > 20 ? query.substring(0, 20) + '...' : query;
+            await chrome.tabGroups.update(groupId, {
+              color: 'blue',
+              title: `AI查询: ${truncatedQuery}`,
+              collapsed: false
+            });
+          }
+        } catch (error) {
+          console.warn('创建标签页分组失败:', error);
         }
-      } catch (error) {
-        console.warn('创建标签页分组失败:', error);
+      } else {
+        console.log('浏览器不支持标签页分组')
       }
 
       // 激活最后一个标签页
